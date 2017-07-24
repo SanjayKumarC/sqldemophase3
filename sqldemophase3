@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<style>
+/* Full-width input fields */
+input[type=text], input[type=password] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+/* Set a style for all buttons */
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+/* Extra styles for the cancel button */
+.cancelbtn {
+    padding: 14px 20px;
+    background-color: #f44336;
+}
+
+/* Float cancel and signup buttons and add an equal width */
+.cancelbtn,.signupbtn {
+    float: left;
+    width: 50%;
+}
+
+/* Add padding to container elements */
+.container {
+    padding: 16px;
+}
+
+/* Clear floats */
+.clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+/* Change styles for cancel button and signup button on extra small screens */
+@media screen and (max-width: 300px) {
+    .cancelbtn, .signupbtn {
+       width: 100%;
+    }
+}
+</style>
+<head>
+<title>Aberdeen Automation</title>
+<h1 align="center">Demo</h2>
+<HTA:APPLICATION 
+     APPLICATIONNAME="HTA Test"
+     SCROLL="yes"
+     SINGLEINSTANCE="yes"
+     WINDOWSTATE="maximize"
+>
+</head>
+<body>
+
+<script language="vbscript">
+
+sub final()
+
+runsql()
+log()
+end sub
+
+sub UpdateList()
+
+Envn = document.getElementById("Env").value
+DBname = document.getElementById("Database_Test").value
+set WshShell = CreateObject("WScript.Shell")
+
+WshShell.Run "runas /savecred /user:MTC01DC04\Administrator ""sqlcmd  -S " & Envn & " -i C:\Users\Administrator\Documents\sql\test\selectDB.sql -o C:\dblist.txt"
+document.getElementById("Database_Test").style.visibility = "visible"
+
+ For Each opt In list.Options
+    opt.RemoveNode
+  Next
+
+  Set fso = CreateObject("Scripting.FileSystemObject")
+  For Each f In fso.GetFolder("C:\dblist.txt").SubFolders
+    Set opt = document.createElement("OPTION")
+    opt.Text  = f.Name
+    opt.Value = f.Path
+    list.Add(opt)
+  Next
+
+End Sub
+
+
+sub showdatabase()
+                server = document.getElementById("Env").value
+                                                                If server = "EC2AMAZ-29KV190\SQLEXPRESS" Then
+                                document.getElementById("Database_Test").style.visibility = "visible"
+                End If
+                                                                document.getElementById("dblabel").style.visibility = "visible"
+end sub
+
+
+sub runsql()
+
+Envn = document.getElementById("Env").value
+DBname = document.getElementById("Database_Test").value
+Path = document.getElementById("path_input").value
+mksnumber = document.getElementById("path_output").value
+
+
+msgbox "runas /savecred /user:MTC01DC04\Administrator ""sqlcmd  -S " & Envn & " -d "& DBname &" -i " & Path & " -o " & mksnumber & ""
+
+Dim FSO
+Set FSO = CreateObject("Scripting.FileSystemObject")
+Set OutPutFile = FSO.OpenTextFile("C:\listoffiles.csv" ,8 , True)
+OutPutFile.WriteLine(date & "," & time & "," & Envn & "," & DBname & "," & mksnumber & "," & content)
+Set FSO= Nothing
+
+
+set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "runas /savecred /user:MTC01DC04\Administrator ""sqlcmd  -S " & Envn & " -d "& DBname &" -i " & Path & " -o " & mksnumber & ""
+
+Dim dteWait
+dteWait = DateAdd("s", 2, Now())
+Do Until (Now() > dteWait)
+Loop
+
+document.getElementById("output").style.visibility = "visible"
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set file = fso.OpenTextFile(mksnumber, 1)
+content = file.ReadAll                
+document.getElementById("output").innerHTML = content
+
+
+
+
+
+end sub
+
+
+
+
+</script>
+
+
+
+
+
+Server Name:<br>
+                <select id="Env" onchange="UpdateList()">
+                  <option value="">BaseLine</option>
+                  <option value="">E2E</option>
+                  <option value="UAT">UAT</option>
+                  <option value="EC2AMAZ-29KV190\SQLEXPRESS">Londsqldb</option>
+                </select>
+  <br>
+  
+  
+
+
+<p style="hidden: visible;" id="dblabel">Database:</p><br>
+                <select id="Database_baseline" style="visibility: hidden;">
+                  <option value="BaseLine_db1">BaseLine_db1</option>
+                  <option value="BaseLine_db2">BaseLine_db2</option>
+                  <option value="BaseLine_db3">BaseLine_db3</option>
+                </select>
+                <select id="Database_E2E" style="visibility: hidden;">
+                  <option value="E2E_db1">E2E_db1</option>
+                  <option value="E2E_db2">E2E_db2</option>
+                  <option value="E2E_db3">E2E_db3</option>
+                </select>
+                <select id="Database_UAT" style="visibility: hidden;">
+                  <option value="UAT_DB1">UAT_db1</option>
+                  <option value="UAT_DB2">UAT_db2</option>
+                  <option value="UAT_DB3">UAT_db3</option>
+                </select>
+                <select id="Database_Test" style="visibility: hidden;">
+                  <option value="teamcity">teamcity</option>
+                  <option value="VCADIS_RAMYA1">Ramya</option>
+                  <option value="VCADIS_RAMYA2">VCADIS_RAMYA</option>
+                </select>             
+  <br>  
+
+DB:</br>
+<select id="list" name="list" onMouseOver="UpdateList">
+</select>
+
+Path:<br>
+  <input type="text" id="path_input"><br/>
+  
+mks:<br>
+
+                <input type="text" id="path_output"><br/>
+                <input type="submit" value="Submit" onclick="final()">
+                
+
+
+
+<textarea id="output" rows="4" cols="50" style="visibility: hidden;">
+
+</textarea>
+
+  
+</body>
